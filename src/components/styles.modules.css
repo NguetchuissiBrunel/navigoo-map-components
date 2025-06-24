@@ -1,0 +1,207 @@
+.header {
+  background-color: #fff;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+.headerTitle {
+  font-size: 24px;
+  font-weight: bold;
+}
+.titleAccent {
+  color: #007bff;
+}
+.mainContainer {
+  display: flex;
+}
+.sidebar {
+  width: 60px;
+  background-color: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+.sidebarButton {
+  background: none;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.sidebarButton.active {
+  background-color: #007bff;
+  border-radius: 5px;
+}
+.contentPanel {
+  flex: 1;
+  padding: 20px;
+  transition: all 0.3s;
+}
+.contentPanel.open {
+  transform: translateX(0);
+}
+.sectionContainer {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.sectionTitle {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 20px;
+  transition: 0.4s;
+}
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+.switch input:checked + .slider {
+  background-color: #007bff;
+}
+.switch input:checked + .slider:before {
+  transform: translateX(20px);
+}
+.toggleLabel {
+  margin-left: 10px;
+}
+.locationButton {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.locationButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.error {
+  color: red;
+  margin: 10px 0;
+}
+.searchSection {
+  padding: 20px;
+}
+.searchGroup {
+  margin-bottom: 15px;
+}
+.label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.searchInput {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.searchResults {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0;
+  border: 1px solid #ccc;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.routeSearchSection {
+  padding: 20px;
+}
+.route-search {
+  margin-bottom: 20px;
+}
+.searchResultItem {
+  padding: 8px;
+  cursor: pointer;
+}
+.searchResultItem:hover {
+  background-color: #f0f0f0;
+}
+.searchButton {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.searchButton.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.optionsSection {
+  margin-top: 20px;
+}
+.optionsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.optionsTitle {
+  font-size: 16px;
+  font-weight: bold;
+}
+.toggleButton {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+}
+.transportOptions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.transportOption {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.transportOption.selected {
+  border-color: #007bff;
+}
+.transportIcon {
+  margin-right: 8px;
+}
+.transportName {
+  font-size: 14px;
+}
