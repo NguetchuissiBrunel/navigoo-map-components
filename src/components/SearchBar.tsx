@@ -1,15 +1,30 @@
 import React, { useState } from 'react';
 import { Place, GeolocationResult } from '../lib/type';
 import { ApiClient } from '../lib/api';
-import styles from './styles.module.css';
 
 interface SearchBarProps {
   apiClient: ApiClient;
   setUserLocation: (location: GeolocationResult | null) => void;
   setSearchedPlace: (place: Place | null) => void;
+  className?: string;
+  inputClassName?: string;
+  buttonClassName?: string;
+  errorClassName?: string;
+  resultsClassName?: string;
+  resultItemClassName?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ apiClient, setUserLocation, setSearchedPlace }) => {
+const SearchBar: React.FC<SearchBarProps> = ({
+  apiClient,
+  setUserLocation,
+  setSearchedPlace,
+  className,
+  inputClassName,
+  buttonClassName,
+  errorClassName,
+  resultsClassName,
+  resultItemClassName,
+}) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Place[]>([]);
@@ -47,26 +62,26 @@ const SearchBar: React.FC<SearchBarProps> = ({ apiClient, setUserLocation, setSe
   };
 
   return (
-    <div className={styles.searchSection}>
-      <div className={styles.searchGroup}>
-        <label htmlFor="search" className={styles.label}>Nom du lieu</label>
+    <div className={className}>
+      <div>
+        <label htmlFor="search">Nom du lieu</label>
         <input
           id="search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Rechercher un lieu"
-          className={styles.searchInput}
+          className={inputClassName}
         />
       </div>
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className={errorClassName}>{error}</div>}
       {results.length > 0 && (
-        <ul className={styles.searchResults}>
+        <ul className={resultsClassName}>
           {results.map((place) => (
             <li
               key={place.id}
               onClick={() => handleSelect(place)}
-              className={styles.searchResultItem}
+              className={resultItemClassName}
             >
               {place.name}
             </li>
@@ -76,7 +91,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ apiClient, setUserLocation, setSe
       <button
         onClick={handleSearch}
         disabled={loading || !query}
-        className={`${styles.searchButton} ${loading || !query ? styles.disabled : ''}`}
+        className={buttonClassName}
       >
         {loading ? 'Recherche...' : 'Rechercher'}
       </button>

@@ -1,7 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import styles from './styles.module.css';
 
-const TransportOptions: React.FC = () => {
+interface TransportOptionsProps {
+  className?: string;
+  headerClassName?: string;
+  titleClassName?: string;
+  toggleButtonClassName?: string;
+  optionsClassName?: string;
+  optionClassName?: string;
+  selectedOptionClassName?: string;
+  iconClassName?: string;
+  nameClassName?: string;
+}
+
+const TransportOptions: React.FC<TransportOptionsProps> = ({
+  className,
+  headerClassName,
+  titleClassName,
+  toggleButtonClassName,
+  optionsClassName,
+  optionClassName,
+  selectedOptionClassName,
+  iconClassName,
+  nameClassName,
+}) => {
   const [showOptions, setShowOptions] = useState(false);
   const [selectedTransport, setSelectedTransport] = useState('taxi');
 
@@ -16,37 +37,34 @@ const TransportOptions: React.FC = () => {
   }, [selectedTransport]);
 
   return (
-    <div className={styles.optionsSection}>
-      <div className={styles.optionsHeader}>
-        <h3 className={styles.optionsTitle}>Moyen de transport</h3>
+    <div className={className}>
+      <div className={headerClassName}>
+        <h3 className={titleClassName}>Moyen de transport</h3>
         <button
           onClick={() => setShowOptions(!showOptions)}
-          className={styles.toggleButton}
+          className={toggleButtonClassName}
         >
           {showOptions ? 'Réduire' : 'Options'}
         </button>
       </div>
       {showOptions && (
-        <div className={styles.transportOptions}>
+        <div className={optionsClassName}>
           {transportOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setSelectedTransport(option.id)}
-              className={`${styles.transportOption} ${
-                selectedTransport === option.id ? styles.selected : ''
-              }`}
+              className={`${optionClassName} ${selectedTransport === option.id ? selectedOptionClassName : ''}`}
               style={{
                 backgroundColor: selectedTransport === option.id ? option.color : undefined,
               }}
             >
-              <span className={styles.transportIcon}>{option.icon}</span>
-              <span className={styles.transportName}>{option.name}</span>
+              <span className={iconClassName}>{option.icon}</span>
+              <span className={nameClassName}>{option.name}</span>
             </button>
           ))}
         </div>
       )}
     </div>
-    
   );
 };
 

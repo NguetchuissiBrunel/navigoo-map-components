@@ -5,6 +5,15 @@ interface RouteSearchProps {
     apiClient: ApiClient;
     setRoutes: (routes: Route[]) => void;
     setSelectedRouteIndex: (index: number) => void;
+    className?: string;
+    searchGroupClassName?: string;
+    labelClassName?: string;
+    inputClassName?: string;
+    resultsClassName?: string;
+    resultItemClassName?: string;
+    errorClassName?: string;
+    buttonClassName?: string;
+    disabledButtonClassName?: string;
 }
 declare const RouteSearch: React.FC<RouteSearchProps>;
 export default RouteSearch;

@@ -1,15 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Place, Route, GeolocationResult } from '../lib/type';
+import { Place, Route } from '../lib/type';
 import { ApiClient } from '../lib/api';
-import styles from './styles.module.css';
 
 interface RouteSearchProps {
   apiClient: ApiClient;
   setRoutes: (routes: Route[]) => void;
   setSelectedRouteIndex: (index: number) => void;
+  className?: string;
+  searchGroupClassName?: string;
+  labelClassName?: string;
+  inputClassName?: string;
+  resultsClassName?: string;
+  resultItemClassName?: string;
+  errorClassName?: string;
+  buttonClassName?: string;
+  disabledButtonClassName?: string;
 }
 
-const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSelectedRouteIndex }) => {
+const RouteSearch: React.FC<RouteSearchProps> = ({
+  apiClient,
+  setRoutes,
+  setSelectedRouteIndex,
+  className,
+  searchGroupClassName,
+  labelClassName,
+  inputClassName,
+  resultsClassName,
+  resultItemClassName,
+  errorClassName,
+  buttonClassName,
+  disabledButtonClassName,
+}) => {
   const [startQuery, setStartQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
   const [startResults, setStartResults] = useState<Place[]>([]);
@@ -93,9 +114,9 @@ const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSele
   };
 
   return (
-    <div className={styles.routeSearchSection}>
-      <div className={styles.searchGroup}>
-        <label htmlFor="start" className={styles.label}>Départ</label>
+    <div className={className}>
+      <div className={searchGroupClassName}>
+        <label htmlFor="start" className={labelClassName}>Départ</label>
         <input
           id="start"
           type="text"
@@ -105,15 +126,15 @@ const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSele
             handleSearch(e.target.value, setStartResults);
           }}
           placeholder="Point de départ"
-          className={styles.searchInput}
+          className={inputClassName}
         />
         {startResults.length > 0 && (
-          <ul className={styles.searchResults}>
+          <ul className={resultsClassName}>
             {startResults.map((place) => (
               <li
                 key={place.id}
                 onClick={() => handleSelectStart(place)}
-                className={styles.searchResultItem}
+                className={resultItemClassName}
               >
                 {place.name}
               </li>
@@ -121,8 +142,8 @@ const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSele
           </ul>
         )}
       </div>
-      <div className={styles.searchGroup}>
-        <label htmlFor="end" className={styles.label}>Destination</label>
+      <div className={searchGroupClassName}>
+        <label htmlFor="end" className={labelClassName}>Destination</label>
         <input
           id="end"
           type="text"
@@ -132,15 +153,15 @@ const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSele
             handleSearch(e.target.value, setEndResults);
           }}
           placeholder="Point d'arrivée"
-          className={styles.searchInput}
+          className={inputClassName}
         />
         {endResults.length > 0 && (
-          <ul className={styles.searchResults}>
+          <ul className={resultsClassName}>
             {endResults.map((place) => (
               <li
                 key={place.id}
                 onClick={() => handleSelectEnd(place)}
-                className={styles.searchResultItem}
+                className={resultItemClassName}
               >
                 {place.name}
               </li>
@@ -148,11 +169,11 @@ const RouteSearch: React.FC<RouteSearchProps> = ({ apiClient, setRoutes, setSele
           </ul>
         )}
       </div>
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className={errorClassName}>{error}</div>}
       <button
         onClick={handleCalculateRoute}
         disabled={loading || !selectedStart || !selectedEnd}
-        className={`${styles.searchButton} ${loading || !selectedStart || !selectedEnd ? styles.disabled : ''}`}
+        className={loading || !selectedStart || !selectedEnd ? disabledButtonClassName : buttonClassName}
       >
         {loading ? 'Calcul...' : 'Calculer l\'itinéraire'}
       </button>

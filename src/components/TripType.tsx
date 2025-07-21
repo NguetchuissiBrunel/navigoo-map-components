@@ -1,7 +1,28 @@
 import React, { useState } from 'react';
-import styles from './styles.module.css';
 
-const TripType: React.FC = () => {
+interface TripTypeProps {
+  className?: string;
+  headerClassName?: string;
+  titleClassName?: string;
+  toggleButtonClassName?: string;
+  optionsClassName?: string;
+  optionClassName?: string;
+  selectedOptionClassName?: string;
+  iconClassName?: string;
+  nameClassName?: string;
+}
+
+const TripType: React.FC<TripTypeProps> = ({
+  className,
+  headerClassName,
+  titleClassName,
+  toggleButtonClassName,
+  optionsClassName,
+  optionClassName,
+  selectedOptionClassName,
+  iconClassName,
+  nameClassName,
+}) => {
   const [showOptions, setShowOptions] = useState(false);
   const [selectedTripType, setSelectedTripType] = useState('individuel');
 
@@ -11,31 +32,29 @@ const TripType: React.FC = () => {
   ];
 
   return (
-    <div className={styles.optionsSection}>
-      <div className={styles.optionsHeader}>
-        <h3 className={styles.optionsTitle}>Type de trajet</h3>
+    <div className={className}>
+      <div className={headerClassName}>
+        <h3 className={titleClassName}>Type de trajet</h3>
         <button
           onClick={() => setShowOptions(!showOptions)}
-          className={styles.toggleButton}
+          className={toggleButtonClassName}
         >
           {showOptions ? 'Réduire' : 'Options'}
         </button>
       </div>
       {showOptions && (
-        <div className={styles.transportOptions}>
+        <div className={optionsClassName}>
           {tripTypeOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setSelectedTripType(option.id)}
-              className={`${styles.transportOption} ${
-                selectedTripType === option.id ? styles.selected : ''
-              }`}
+              className={`${optionClassName} ${selectedTripType === option.id ? selectedOptionClassName : ''}`}
               style={{
                 backgroundColor: selectedTripType === option.id ? option.color : undefined,
               }}
             >
-              <span className={styles.transportIcon}>{option.icon}</span>
-              <span className={styles.transportName}>{option.name}</span>
+              <span className={iconClassName}>{option.icon}</span>
+              <span className={nameClassName}>{option.name}</span>
             </button>
           ))}
         </div>

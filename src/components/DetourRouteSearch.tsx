@@ -1,15 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { Place, Route } from '../lib/type';
 import { ApiClient } from '../lib/api';
-import styles from './styles.module.css';
 
 interface DetourRouteSearchProps {
   apiClient: ApiClient;
   setRoutes: (routes: Route[]) => void;
   setSelectedRouteIndex: (index: number) => void;
+  className?: string;
+  searchGroupClassName?: string;
+  labelClassName?: string;
+  inputClassName?: string;
+  resultsClassName?: string;
+  resultItemClassName?: string;
+  errorClassName?: string;
+  buttonClassName?: string;
+  disabledButtonClassName?: string;
 }
 
-const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRoutes, setSelectedRouteIndex }) => {
+const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({
+  apiClient,
+  setRoutes,
+  setSelectedRouteIndex,
+  className,
+  searchGroupClassName,
+  labelClassName,
+  inputClassName,
+  resultsClassName,
+  resultItemClassName,
+  errorClassName,
+  buttonClassName,
+  disabledButtonClassName,
+}) => {
   const [startQuery, setStartQuery] = useState('');
   const [detourQuery, setDetourQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
@@ -120,9 +141,9 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
   };
 
   return (
-    <div className={styles.routeSearchSection}>
-      <div className={styles.searchGroup}>
-        <label htmlFor="start" className={styles.label}>Départ</label>
+    <div className={className}>
+      <div className={searchGroupClassName}>
+        <label htmlFor="start" className={labelClassName}>Départ</label>
         <input
           id="start"
           type="text"
@@ -132,15 +153,15 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
             handleSearch(e.target.value, setStartResults);
           }}
           placeholder="Point de départ"
-          className={styles.searchInput}
+          className={inputClassName}
         />
         {startResults.length > 0 && (
-          <ul className={styles.searchResults}>
+          <ul className={resultsClassName}>
             {startResults.map((place) => (
               <li
                 key={place.id}
                 onClick={() => handleSelectStart(place)}
-                className={styles.searchResultItem}
+                className={resultItemClassName}
               >
                 {place.name}
               </li>
@@ -148,8 +169,8 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
           </ul>
         )}
       </div>
-      <div className={styles.searchGroup}>
-        <label htmlFor="detour" className={styles.label}>Détour</label>
+      <div className={searchGroupClassName}>
+        <label htmlFor="detour" className={labelClassName}>Détour</label>
         <input
           id="detour"
           type="text"
@@ -159,15 +180,15 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
             handleSearch(e.target.value, setDetourResults);
           }}
           placeholder="Point de détour"
-          className={styles.searchInput}
+          className={inputClassName}
         />
         {detourResults.length > 0 && (
-          <ul className={styles.searchResults}>
+          <ul className={resultsClassName}>
             {detourResults.map((place) => (
               <li
                 key={place.id}
                 onClick={() => handleSelectDetour(place)}
-                className={styles.searchResultItem}
+                className={resultItemClassName}
               >
                 {place.name}
               </li>
@@ -175,8 +196,8 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
           </ul>
         )}
       </div>
-      <div className={styles.searchGroup}>
-        <label htmlFor="end" className={styles.label}>Destination</label>
+      <div className={searchGroupClassName}>
+        <label htmlFor="end" className={labelClassName}>Destination</label>
         <input
           id="end"
           type="text"
@@ -186,15 +207,15 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
             handleSearch(e.target.value, setEndResults);
           }}
           placeholder="Point d'arrivée"
-          className={styles.searchInput}
+          className={inputClassName}
         />
         {endResults.length > 0 && (
-          <ul className={styles.searchResults}>
+          <ul className={resultsClassName}>
             {endResults.map((place) => (
               <li
                 key={place.id}
                 onClick={() => handleSelectEnd(place)}
-                className={styles.searchResultItem}
+                className={resultItemClassName}
               >
                 {place.name}
               </li>
@@ -202,11 +223,11 @@ const DetourRouteSearch: React.FC<DetourRouteSearchProps> = ({ apiClient, setRou
           </ul>
         )}
       </div>
-      {error && <div className={styles.error}>{error}</div>}
+      {error && <div className={errorClassName}>{error}</div>}
       <button
         onClick={handleCalculateRoute}
         disabled={loading || !selectedStart || !selectedDetour || !selectedEnd}
-        className={`${styles.searchButton} ${loading || !selectedStart || !selectedDetour || !selectedEnd ? styles.disabled : ''}`}
+        className={loading || !selectedStart || !selectedDetour || !selectedEnd ? disabledButtonClassName : buttonClassName}
       >
         {loading ? 'Calcul...' : 'Calculer l\'itinéraire'}
       </button>

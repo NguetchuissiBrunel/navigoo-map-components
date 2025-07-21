@@ -9,6 +9,7 @@ interface DashboardProps {
     setRoutes: (routes: Route[]) => void;
     setSelectedRouteIndex: (index: number) => void;
     isTracking: boolean;
+    className?: string;
 }
 declare const Dashboard: React.FC<DashboardProps>;
 export default Dashboard;
