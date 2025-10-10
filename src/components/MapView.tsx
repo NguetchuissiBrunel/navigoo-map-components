@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parse } from 'wellknown';
@@ -28,77 +28,6 @@ const MapView: React.FC<MapViewProps> = ({
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const clickMarkerRef = useRef<L.Marker | null>(null);
   const routePolylinesRef = useRef<L.Polyline[]>([]);
-  const [ipLocation, setIpLocation] = useState<{ lat: number; lng: number } | null>(null);
-
-  // Fonction pour obtenir la localisation par IP
-  const getLocationByIP = async (): Promise<{ lat: number; lng: number } | null> => {
-    try {
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
-      
-      if (data.latitude && data.longitude) {
-        return {
-          lat: data.latitude,
-          lng: data.longitude
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Erreur de géolocalisation par IP:', error);
-      return null;
-    }
-  };
-
-  // Fonction pour obtenir la localisation par le navigateur
-  const getBrowserLocation = (): Promise<{ lat: number; lng: number }> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Géolocalisation non supportée'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          reject(error);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
-    });
-  };
-
-  // Effet pour la géolocalisation au démarrage
-  useEffect(() => {
-    const initializeLocation = async () => {
-      try {
-        // Essayer d'abord la géolocalisation du navigateur
-        const browserLocation = await getBrowserLocation();
-        setIpLocation(browserLocation);
-      } catch (browserError) {
-        console.log('Géolocalisation navigateur échouée, tentative par IP...', browserError);
-        
-        // Fallback sur la géolocalisation par IP
-        const ipLocation = await getLocationByIP();
-        if (ipLocation) {
-          setIpLocation(ipLocation);
-        } else {
-          // Fallback final sur une position par défaut (centre du monde)
-          setIpLocation({ lat: 20, lng: 0 });
-        }
-      }
-    };
-
-    initializeLocation();
-  }, []);
 
   const parseWKTLineString = (wkt: string): [number, number][] => {
     try {
@@ -123,20 +52,18 @@ const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
-      // Position par défaut centrée sur le monde, sera mise à jour par la géolocalisation
-      const defaultCenter = ipLocation || { lat: 20, lng: 0 };
-      
       mapRef.current = L.map(mapContainerRef.current, {
-        center: [defaultCenter.lat, defaultCenter.lng],
-        zoom: 12,
-        minZoom: 2, // Zoom minimal réduit pour voir le monde entier
-        maxZoom: 18, // Zoom maximal augmenté pour plus de détails
-        // Suppression des limites de la carte
+        center: [7.365, 12.3], // Centre approximatif du Cameroun
+        zoom: 7, // Zoom ajusté pour voir l'ensemble du Cameroun
+        minZoom: 6,
+        maxZoom: 16,
+        maxBounds: [[1.65, 8.4], [13.08, 16.2]], // Limites pour le Cameroun
+        maxBoundsViscosity: 1.0,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18,
+        maxZoom: 16,
       }).addTo(mapRef.current);
 
       L.Icon.Default.mergeOptions({
@@ -164,41 +91,46 @@ const MapView: React.FC<MapViewProps> = ({
       });
     }
 
-    // Mettre à jour le centre de la carte quand la localisation par IP est disponible
-    if (mapRef.current && ipLocation && !userLocation && !searchedPlace && !routes) {
-      mapRef.current.setView([ipLocation.lat, ipLocation.lng], 12, { animate: true });
-      
-      // Ajouter un marqueur pour la position détectée
-      if (!markerRef.current) {
-        markerRef.current = L.marker([ipLocation.lat, ipLocation.lng])
-          .addTo(mapRef.current)
-          .bindPopup(`<b>Votre position approximative</b><br>Détectée par IP<br>Lat: ${ipLocation.lat.toFixed(6)}<br>Lng: ${ipLocation.lng.toFixed(6)}`)
-          .openPopup();
-      }
-    }
-
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, [apiClient, ipLocation]);
+  }, [apiClient]);
 
   useEffect(() => {
     if (!mapRef.current) return;
 
-    if (routeLayerRef.current) routeLayerRef.current.clearLayers();
-    if (markerRef.current) markerRef.current.remove();
-    if (clickMarkerRef.current) clickMarkerRef.current.remove();
+    // Nettoyer les couches précédentes
+    if (routeLayerRef.current) {
+      routeLayerRef.current.clearLayers();
+    }
+    if (markerRef.current) {
+      markerRef.current.remove();
+      markerRef.current = null;
+    }
+    if (clickMarkerRef.current) {
+      clickMarkerRef.current.remove();
+      clickMarkerRef.current = null;
+    }
+
     routePolylinesRef.current = [];
 
+    // Fonction pour centrer la carte sur un point avec un marqueur
     const centerOnPoint = async (lat: number, lng: number, placeName: string, zoom: number = 16) => {
       let displayName = placeName;
       if (placeName === 'Votre position') {
         const closestPlace = await apiClient.findClosestPlace(lat, lng);
         displayName = closestPlace?.name || placeName;
       }
+      
+      // Supprimer l'ancien marqueur s'il existe
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      
       mapRef.current!.setView([lat, lng], zoom, { animate: true });
       markerRef.current = L.marker([lat, lng])
         .addTo(mapRef.current!)
@@ -207,6 +139,7 @@ const MapView: React.FC<MapViewProps> = ({
     };
 
     if (routes && routes.length > 0) {
+      // Gérer les itinéraires
       let allCoordinates: [number, number][] = [];
       routes.forEach((route, index) => {
         const coordinates: [number, number][] = [];
@@ -276,14 +209,10 @@ const MapView: React.FC<MapViewProps> = ({
       centerOnPoint(searchedPlace.coordinates.lat, searchedPlace.coordinates.lng, searchedPlace.name);
     } else if (userLocation) {
       centerOnPoint(userLocation.latitude, userLocation.longitude, 'Votre position');
-    } else if (ipLocation) {
-      // Centrer sur la position IP si aucune autre position n'est disponible
-      centerOnPoint(ipLocation.lat, ipLocation.lng, 'Votre position approximative', 12);
     } else {
-      // Position de fallback centrée sur le monde
-      mapRef.current!.setView([20, 0], 2, { animate: true });
+      mapRef.current!.setView([7.365, 12.3], 7, { animate: true });
     }
-  }, [apiClient, userLocation, searchedPlace, routes, selectedRouteIndex, setSelectedRouteIndex, ipLocation]);
+  }, [apiClient, userLocation, searchedPlace, routes, selectedRouteIndex, setSelectedRouteIndex]);
 
   return <div className="w-full h-screen" ref={mapContainerRef} />;
 };
