@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parse } from 'wellknown';
@@ -28,6 +28,77 @@ const MapView: React.FC<MapViewProps> = ({
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const clickMarkerRef = useRef<L.Marker | null>(null);
   const routePolylinesRef = useRef<L.Polyline[]>([]);
+  const [ipLocation, setIpLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Fonction pour obtenir la localisation par IP
+  const getLocationByIP = async (): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      
+      if (data.latitude && data.longitude) {
+        return {
+          lat: data.latitude,
+          lng: data.longitude
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur de géolocalisation par IP:', error);
+      return null;
+    }
+  };
+
+  // Fonction pour obtenir la localisation par le navigateur
+  const getBrowserLocation = (): Promise<{ lat: number; lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Géolocalisation non supportée'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    });
+  };
+
+  // Effet pour la géolocalisation au démarrage
+  useEffect(() => {
+    const initializeLocation = async () => {
+      try {
+        // Essayer d'abord la géolocalisation du navigateur
+        const browserLocation = await getBrowserLocation();
+        setIpLocation(browserLocation);
+      } catch (browserError) {
+        console.log('Géolocalisation navigateur échouée, tentative par IP...', browserError);
+        
+        // Fallback sur la géolocalisation par IP
+        const ipLocation = await getLocationByIP();
+        if (ipLocation) {
+          setIpLocation(ipLocation);
+        } else {
+          // Fallback final sur une position par défaut (centre du monde)
+          setIpLocation({ lat: 20, lng: 0 });
+        }
+      }
+    };
+
+    initializeLocation();
+  }, []);
 
   const parseWKTLineString = (wkt: string): [number, number][] => {
     try {
@@ -52,18 +123,20 @@ const MapView: React.FC<MapViewProps> = ({
 
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
+      // Position par défaut centrée sur le monde, sera mise à jour par la géolocalisation
+      const defaultCenter = ipLocation || { lat: 20, lng: 0 };
+      
       mapRef.current = L.map(mapContainerRef.current, {
-        center: [3.8480, 11.5021], // Centre par défaut : Yaoundé
+        center: [defaultCenter.lat, defaultCenter.lng],
         zoom: 12,
-        minZoom: 11,
-        maxZoom: 16,
-        maxBounds: [[3.7, 11.4], [4.0, 11.6]],
-        maxBoundsViscosity: 1.0,
+        minZoom: 2, // Zoom minimal réduit pour voir le monde entier
+        maxZoom: 18, // Zoom maximal augmenté pour plus de détails
+        // Suppression des limites de la carte
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 16,
+        maxZoom: 18,
       }).addTo(mapRef.current);
 
       L.Icon.Default.mergeOptions({
@@ -91,13 +164,26 @@ const MapView: React.FC<MapViewProps> = ({
       });
     }
 
+    // Mettre à jour le centre de la carte quand la localisation par IP est disponible
+    if (mapRef.current && ipLocation && !userLocation && !searchedPlace && !routes) {
+      mapRef.current.setView([ipLocation.lat, ipLocation.lng], 12, { animate: true });
+      
+      // Ajouter un marqueur pour la position détectée
+      if (!markerRef.current) {
+        markerRef.current = L.marker([ipLocation.lat, ipLocation.lng])
+          .addTo(mapRef.current)
+          .bindPopup(`<b>Votre position approximative</b><br>Détectée par IP<br>Lat: ${ipLocation.lat.toFixed(6)}<br>Lng: ${ipLocation.lng.toFixed(6)}`)
+          .openPopup();
+      }
+    }
+
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, [apiClient]);
+  }, [apiClient, ipLocation]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -190,10 +276,14 @@ const MapView: React.FC<MapViewProps> = ({
       centerOnPoint(searchedPlace.coordinates.lat, searchedPlace.coordinates.lng, searchedPlace.name);
     } else if (userLocation) {
       centerOnPoint(userLocation.latitude, userLocation.longitude, 'Votre position');
+    } else if (ipLocation) {
+      // Centrer sur la position IP si aucune autre position n'est disponible
+      centerOnPoint(ipLocation.lat, ipLocation.lng, 'Votre position approximative', 12);
     } else {
-      mapRef.current!.setView([3.8480, 11.5021], 12, { animate: true });
+      // Position de fallback centrée sur le monde
+      mapRef.current!.setView([20, 0], 2, { animate: true });
     }
-  }, [apiClient, userLocation, searchedPlace, routes, selectedRouteIndex, setSelectedRouteIndex]);
+  }, [apiClient, userLocation, searchedPlace, routes, selectedRouteIndex, setSelectedRouteIndex, ipLocation]);
 
   return <div className="w-full h-screen" ref={mapContainerRef} />;
 };
