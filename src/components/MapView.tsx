@@ -50,20 +50,26 @@ const MapView: React.FC<MapViewProps> = ({
     return [];
   };
 
-  useEffect(() => {
+useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
+      const maxZoom = 16;
       mapRef.current = L.map(mapContainerRef.current, {
         center: [7.365, 12.3], // Centre approximatif du Cameroun
         zoom: 7, // Zoom ajusté pour voir l'ensemble du Cameroun
         minZoom: 6,
-        maxZoom: 16,
-        maxBounds: [[1.65, 8.4], [13.08, 16.2]], // Limites pour le Cameroun
+        maxZoom: maxZoom,
+        maxBounds: [
+          [1.65, 8.4], // Coin sud-ouest du Cameroun
+          [13.08, 16.2], // Coin nord-est du Cameroun
+        ],
         maxBoundsViscosity: 1.0,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 16,
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: maxZoom,
+        tileSize: 256,
+        zoomOffset: 0,
       }).addTo(mapRef.current);
 
       L.Icon.Default.mergeOptions({
@@ -71,6 +77,7 @@ const MapView: React.FC<MapViewProps> = ({
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       });
+
 
       routeLayerRef.current = L.layerGroup().addTo(mapRef.current);
 
