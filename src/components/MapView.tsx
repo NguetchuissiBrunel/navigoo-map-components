@@ -66,7 +66,7 @@ const MapView: React.FC<MapViewProps> = ({
         minZoom: 5,
         maxZoom,
         maxBounds: CAMEROON_BOUNDS,
-        maxBoundsViscosity: 0.4, // ✅ Souple — permet un léger glissement
+        maxBoundsViscosity:0
       });
 
       // 🗺 Couche OpenStreetMap
