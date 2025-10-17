@@ -26,6 +26,8 @@ const MapView: React.FC<MapViewProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const routePolylinesRef = useRef<L.Polyline[]>([]);
+  const searchMarkerRef = useRef<L.Marker | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
 
   // ✅ Bornes élargies du Cameroun
   const CAMEROON_BOUNDS = L.latLngBounds(
@@ -66,7 +68,7 @@ const MapView: React.FC<MapViewProps> = ({
         minZoom: 5,
         maxZoom,
         maxBounds: CAMEROON_BOUNDS,
-        maxBoundsViscosity:0
+        maxBoundsViscosity: 0.8
       });
 
       // 🗺 Couche OpenStreetMap
@@ -95,16 +97,27 @@ const MapView: React.FC<MapViewProps> = ({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [apiClient]);
+  }, []);
 
-  // 🚗 Affichage des itinéraires
+  // 🚗 Affichage des itinéraires, lieux recherchés et position utilisateur
   useEffect(() => {
     if (!mapRef.current) return;
 
     // Nettoyage avant rendu
     routeLayerRef.current?.clearLayers();
     routePolylinesRef.current = [];
+    
+    // Nettoyer les anciens marqueurs
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.remove();
+      searchMarkerRef.current = null;
+    }
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
 
+    // ✅ PRIORITÉ 1 : Affichage des itinéraires
     if (routes && routes.length > 0) {
       let allCoordinates: [number, number][] = [];
 
@@ -117,23 +130,145 @@ const MapView: React.FC<MapViewProps> = ({
 
         if (coordinates.length > 0) {
           const color = index === selectedRouteIndex ? 'green' : 'black';
-          const polyline = L.polyline(coordinates, { color, weight: 4, opacity: 0.8 })
+          const weight = index === selectedRouteIndex ? 5 : 3;
+          const opacity = index === selectedRouteIndex ? 1.0 : 0.5;
+
+          const polyline = L.polyline(coordinates, { color, weight, opacity })
             .addTo(routeLayerRef.current!)
-            .on('click', () => setSelectedRouteIndex(index));
+            .on('click', (e: L.LeafletMouseEvent) => {
+              L.DomEvent.stopPropagation(e);
+              setSelectedRouteIndex(index);
+              
+              // Mettre à jour les styles de toutes les polylines
+              routePolylinesRef.current.forEach((pl, i) => {
+                pl.setStyle({
+                  color: i === index ? 'green' : 'black',
+                  weight: i === index ? 5 : 3,
+                  opacity: i === index ? 1.0 : 0.5,
+                });
+              });
+
+              // Afficher un popup au centre de la route
+              const bounds = polyline.getBounds();
+              const center = bounds.getCenter();
+              L.popup()
+                .setLatLng(center)
+                .setContent(`
+                  <b>Route ${index + 1}</b><br>
+                  Distance: ${route.distance.toFixed(2)} m<br>
+                  Durée: ${(route.duration / 60).toFixed(2)} min<br>
+                  Départ: ${route.startPlaceName || 'Départ'}<br>
+                  Destination: ${route.endPlaceName || 'Destination'}
+                `)
+                .openOn(mapRef.current!);
+            });
+
           routePolylinesRef.current.push(polyline);
           allCoordinates.push(...coordinates);
+
+          // Ajouter des marqueurs de départ et d'arrivée pour la route sélectionnée
+          if (index === selectedRouteIndex) {
+            const startPoint = coordinates[0];
+            const endPoint = coordinates[coordinates.length - 1];
+
+            // Marqueur de départ
+            L.marker(startPoint, { 
+              icon: L.icon({ 
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+              }) 
+            })
+              .addTo(routeLayerRef.current!)
+              .bindPopup(`
+                <b>${route.startPlaceName || 'Départ'}</b><br>
+                Lat: ${startPoint[0].toFixed(6)}<br>
+                Lng: ${startPoint[1].toFixed(6)}
+              `);
+
+            // Marqueur d'arrivée
+            L.marker(endPoint, { 
+              icon: L.icon({ 
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+              }) 
+            })
+              .addTo(routeLayerRef.current!)
+              .bindPopup(`
+                <b>${route.endPlaceName || 'Destination'}</b><br>
+                Lat: ${endPoint[0].toFixed(6)}<br>
+                Lng: ${endPoint[1].toFixed(6)}
+              `);
+          }
         }
       });
 
-      // 🗺 Ajustement intelligent de la vue sans sortir du Cameroun
-      const routeBounds = L.latLngBounds(allCoordinates);
-      const mergedBounds = routeBounds.extend(CAMEROON_BOUNDS);
-      mapRef.current.fitBounds(mergedBounds, { padding: [30, 30] });
-    } else {
-      // 🌍 Recentrage sur le Cameroun si aucun itinéraire
-      mapRef.current.fitBounds(CAMEROON_BOUNDS, { animate: true });
+      // 🗺 Ajustement de la vue sur l'itinéraire
+      if (allCoordinates.length > 0) {
+        const routeBounds = L.latLngBounds(allCoordinates);
+        mapRef.current.fitBounds(routeBounds, { padding: [50, 50], animate: true });
+      }
+    } 
+    // ✅ PRIORITÉ 2 : Affichage du lieu recherché (seulement s'il n'y a pas de routes)
+    else if (searchedPlace && searchedPlace.coordinates) {
+      const { lat, lng } = searchedPlace.coordinates;
+      
+      searchMarkerRef.current = L.marker([lat, lng], {
+        icon: L.icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
+      })
+        .addTo(mapRef.current!)
+        .bindPopup(`
+          <b>${searchedPlace.name}</b><br>
+          Lat: ${lat.toFixed(6)}<br>
+          Lng: ${lng.toFixed(6)}
+        `)
+        .openPopup();
+
+      mapRef.current.setView([lat, lng], 14, { animate: true });
+    } 
+    // ✅ PRIORITÉ 3 : Affichage de la position utilisateur (seulement s'il n'y a ni routes ni lieu recherché)
+    else if (userLocation) {
+      const { latitude, longitude } = userLocation;
+      
+      userMarkerRef.current = L.marker([latitude, longitude], {
+        icon: L.icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
+      })
+        .addTo(mapRef.current!)
+        .bindPopup(`
+          <b>Votre position</b><br>
+          Lat: ${latitude.toFixed(6)}<br>
+          Lng: ${longitude.toFixed(6)}
+        `)
+        .openPopup();
+
+      mapRef.current.setView([latitude, longitude], 14, { animate: true });
+    } 
+    // ✅ PRIORITÉ 4 : Recentrage sur le Cameroun par défaut
+    else {
+      mapRef.current.fitBounds(CAMEROON_BOUNDS, { animate: true, padding: [20, 20] });
     }
-  }, [routes, selectedRouteIndex]);
+  }, [routes, selectedRouteIndex, searchedPlace, userLocation, setSelectedRouteIndex]);
 
   return (
     <div
