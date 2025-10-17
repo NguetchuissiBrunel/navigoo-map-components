@@ -24,17 +24,16 @@ const MapView: React.FC<MapViewProps> = ({
 }) => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markerRef = useRef<L.Marker | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
-  const clickMarkerRef = useRef<L.Marker | null>(null);
   const routePolylinesRef = useRef<L.Polyline[]>([]);
 
-  // 📍 Définition des limites du Cameroun
+  // ✅ Bornes élargies du Cameroun
   const CAMEROON_BOUNDS = L.latLngBounds(
-    [1.65, 8.4],   // Coin sud-ouest
-    [13.08, 16.2]  // Coin nord-est
+    [1.0, 7.8],   // Sud-Ouest
+    [13.5, 16.5]  // Nord-Est
   );
 
+  // 🔍 Fonction pour parser les géométries WKT
   const parseWKTLineString = (wkt: string): [number, number][] => {
     try {
       const geo = parse(wkt);
@@ -42,7 +41,7 @@ const MapView: React.FC<MapViewProps> = ({
         return geo.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
       }
     } catch (error) {
-      console.error('wellknown parsing failed:', error);
+      console.error('Erreur de parsing WKT:', error);
     }
     const match = wkt.match(/LINESTRING\s*\(([^)]+)\)/);
     if (match) {
@@ -56,25 +55,27 @@ const MapView: React.FC<MapViewProps> = ({
     return [];
   };
 
+  // 🌍 Initialisation de la carte
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
       const maxZoom = 18;
-      
-      // 🌍 Configuration initiale de la carte
+
       mapRef.current = L.map(mapContainerRef.current, {
-        center: [7.3697, 12.3547], // Centre géographique du Cameroun
+        center: [7.3697, 12.3547], // Centre du Cameroun
         zoom: 6,
-        minZoom: 5, // Permet un léger recul
+        minZoom: 5,
         maxZoom,
         maxBounds: CAMEROON_BOUNDS,
-        maxBoundsViscosity: 1.0,
+        maxBoundsViscosity: 0.4, // ✅ Souple — permet un léger glissement
       });
 
+      // 🗺 Couche OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom,
       }).addTo(mapRef.current);
 
+      // 🧭 Icônes par défaut
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -83,8 +84,11 @@ const MapView: React.FC<MapViewProps> = ({
 
       routeLayerRef.current = L.layerGroup().addTo(mapRef.current);
 
-      // 🧭 Afficher tout le Cameroun dès le départ
-      mapRef.current.fitBounds(CAMEROON_BOUNDS, { animate: false });
+      // ✅ Recentrage automatique après affichage
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+        mapRef.current?.fitBounds(CAMEROON_BOUNDS, { animate: true, padding: [20, 20] });
+      }, 300);
     }
 
     return () => {
@@ -93,10 +97,11 @@ const MapView: React.FC<MapViewProps> = ({
     };
   }, [apiClient]);
 
+  // 🚗 Affichage des itinéraires
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Nettoyage
+    // Nettoyage avant rendu
     routeLayerRef.current?.clearLayers();
     routePolylinesRef.current = [];
 
@@ -120,18 +125,22 @@ const MapView: React.FC<MapViewProps> = ({
         }
       });
 
-      // 🗺 Ajustement intelligent de la vue
+      // 🗺 Ajustement intelligent de la vue sans sortir du Cameroun
       const routeBounds = L.latLngBounds(allCoordinates);
-      const mergedBounds = routeBounds.extend(CAMEROON_BOUNDS); // Ne jamais sortir du pays
+      const mergedBounds = routeBounds.extend(CAMEROON_BOUNDS);
       mapRef.current.fitBounds(mergedBounds, { padding: [30, 30] });
-    } 
-    else if (!routes?.length) {
-      // 🌍 Recentrage sur tout le Cameroun si aucun itinéraire
+    } else {
+      // 🌍 Recentrage sur le Cameroun si aucun itinéraire
       mapRef.current.fitBounds(CAMEROON_BOUNDS, { animate: true });
     }
   }, [routes, selectedRouteIndex]);
 
-  return <div ref={mapContainerRef} className="w-full h-screen rounded-xl overflow-hidden shadow-md" />;
+  return (
+    <div
+      ref={mapContainerRef}
+      className="w-full h-screen rounded-xl overflow-hidden shadow-md"
+    />
+  );
 };
 
 export default MapView;
