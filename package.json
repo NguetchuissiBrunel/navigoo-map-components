@@ -1,6 +1,6 @@
 {
   "name": "@navigoo/map-components",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Reusable React components for mapping and routing in Yaoundé",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
